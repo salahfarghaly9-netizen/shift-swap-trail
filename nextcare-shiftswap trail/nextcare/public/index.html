@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nextcare — Shift Swap</title>
+<style>
+/* ── Reset & Tokens ───────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#0066CC;--brand2:#0052A3;--brand-light:#E8F2FF;
+  --green:#16A34A;--green-bg:#F0FDF4;--green-bd:#BBF7D0;
+  --amber:#D97706;--amber-bg:#FFFBEB;--amber-bd:#FDE68A;
+  --red:#DC2626;  --red-bg:#FEF2F2;  --red-bd:#FECACA;
+  --gray:#6B7280; --bg:#F8FAFC;--card:#FFFFFF;
+  --border:#E2E8F0;--text:#1E293B;--text2:#64748B;
+  --radius:12px;--radius-sm:8px;--shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -2px rgba(0,0,0,.1);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+a{color:inherit;text-decoration:none}
+input,select,textarea,button{font-family:inherit}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+.app{display:flex;flex-direction:column;min-height:100vh}
+.shell{display:flex;flex:1}
+.sidebar{width:256px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform .25s}
+.main{margin-left:256px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:60px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50}
+.content{padding:28px 24px;max-width:1080px;flex:1}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+.sidebar-logo{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-icon{width:38px;height:38px;background:var(--brand);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;flex-shrink:0}
+.logo-text{font-size:16px;font-weight:700;color:var(--text)}
+.logo-sub{font-size:11px;color:var(--text2)}
+
+.user-pill{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--brand-light);color:var(--brand);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.user-name{font-size:13px;font-weight:600}
+.user-role{font-size:11px;color:var(--text2)}
+
+.mode-row{display:flex;gap:4px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.mode-btn{flex:1;padding:6px;font-size:12px;font-weight:500;border:1px solid var(--border);background:none;border-radius:var(--radius-sm);cursor:pointer;color:var(--text2);transition:all .15s}
+.mode-btn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+.nav{flex:1;padding:10px 12px;overflow-y:auto}
+.nav-label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;padding:6px 8px 4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:var(--radius-sm);cursor:pointer;color:var(--text2);font-size:13px;font-weight:500;transition:all .15s;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:var(--bg);color:var(--text)}
+.nav-item.active{background:var(--brand-light);color:var(--brand)}
+.nav-item .ni{font-size:16px;width:18px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;padding:0 4px;display:flex;align-items:center;justify-content:center}
+
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--text2);text-align:center;line-height:1.8}
+.sidebar-footer strong{color:var(--brand);display:block;font-size:12px}
+
+/* ── Topbar ──────────────────────────────────────────────────── */
+.page-title{font-size:16px;font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.notif-btn{width:36px;height:36px;border-radius:var(--radius-sm);background:var(--bg);border:1px solid var(--border);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;position:relative;transition:background .15s}
+.notif-btn:hover{background:var(--border)}
+.notif-dot{position:absolute;top:-3px;right:-3px;width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--card)}
+#menu-toggle{display:none;width:36px;height:36px;border-radius:var(--radius-sm);background:none;border:1px solid var(--border);cursor:pointer;font-size:17px}
+
+/* ── Notif panel ─────────────────────────────────────────────── */
+.notif-panel{position:fixed;top:60px;right:16px;width:340px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);z-index:200;display:none}
+.notif-panel.open{display:block;animation:fadeDown .2s ease}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.notif-head{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600}
+.notif-clear{font-size:12px;color:var(--brand);background:none;border:none;cursor:pointer;font-family:inherit}
+.notif-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;display:flex;gap:10px;align-items:flex-start}
+.notif-item:last-child{border-bottom:none}
+.notif-item:hover{background:var(--bg)}
+.notif-item.unread{border-left:3px solid var(--brand)}
+.nd{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.notif-text{font-size:12px;color:var(--text)}
+.notif-time{font-size:11px;color:var(--text2);margin-top:2px}
+.notif-empty{padding:24px;text-align:center;color:var(--text2);font-size:13px}
+
+/* ── Toast ───────────────────────────────────────────────────── */
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:9999}
+.toast{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 16px;display:flex;align-items:center;gap:10px;font-size:13px;box-shadow:var(--shadow-md);min-width:260px;animation:toastIn .3s ease}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.toast.success{border-left:3px solid var(--green)}
+.toast.error  {border-left:3px solid var(--red)}
+.toast.info   {border-left:3px solid var(--brand)}
+.toast.warning{border-left:3px solid var(--amber)}
+
+/* ── Stats ───────────────────────────────────────────────────── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow)}
+.stat-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.stat-val{font-size:26px;font-weight:700}
+.stat-sub{font-size:11px;color:var(--text2);margin-top:3px}
+.stat-blue .stat-val{color:var(--brand)}
+.stat-green .stat-val{color:var(--green)}
+.stat-amber .stat-val{color:var(--amber)}
+.stat-red .stat-val{color:var(--red)}
+
+/* ── Card ────────────────────────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}
+.card-head{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:14px;font-weight:600}
+
+/* ── Table ───────────────────────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;background:var(--bg);border-bottom:1px solid var(--border)}
+.tbl td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#FAFBFC}
+
+/* ── Badge ───────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600}
+.badge-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
+.badge-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)}
+.badge-red  {background:var(--red-bg);  color:var(--red);  border:1px solid var(--red-bd)}
+.badge-blue {background:var(--brand-light);color:var(--brand);border:1px solid #BFDBFE}
+.badge-gray {background:var(--bg);color:var(--gray);border:1px solid var(--border)}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn{padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--bg)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn-primary:hover{background:var(--brand2)}
+.btn-success{background:var(--green-bg);color:var(--green);border-color:var(--green-bd)}
+.btn-success:hover{background:#DCFCE7}
+.btn-danger {background:var(--red-bg); color:var(--red); border-color:var(--red-bd)}
+.btn-danger:hover {background:#FEE2E2}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-xs{padding:3px 9px;font-size:11px}
+
+/* ── Row items ───────────────────────────────────────────────── */
+.row-item{display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid var(--border);transition:background .15s}
+.row-item:last-child{border-bottom:none}
+.row-item:hover{background:#FAFBFC}
+.ri-info{flex:1;min-width:0}
+.ri-name{font-size:13px;font-weight:500;margin-bottom:1px}
+.ri-sub{font-size:12px;color:var(--text2)}
+.ri-note{margin-top:6px;font-size:12px;color:var(--text2);background:var(--bg);padding:7px 10px;border-radius:6px;border-left:2px solid var(--border)}
+.ri-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* ── Form ────────────────────────────────────────────────────── */
+.form-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}
+.form-input,.form-select,.form-textarea{width:100%;padding:9px 12px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card);color:var(--text);transition:border-color .15s;outline:none}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,102,204,.1)}
+.form-textarea{resize:vertical;min-height:80px}
+.form-hint{font-size:11px;color:var(--text2);margin-top:4px}
+.form-error{font-size:12px;color:var(--red);margin-top:4px}
+
+/* ── Urgency dot ─────────────────────────────────────────────── */
+.u-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:6px}
+.u-urgent{background:var(--red)}
+.u-medium{background:var(--amber)}
+.u-normal{background:var(--green)}
+
+/* ── Login screen ────────────────────────────────────────────── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);padding:20px}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:40px;width:100%;max-width:420px;box-shadow:var(--shadow-md)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .logo-icon{width:52px;height:52px;font-size:24px;margin:0 auto 10px;border-radius:14px}
+.login-logo h1{font-size:22px;font-weight:700}
+.login-logo p{font-size:13px;color:var(--text2);margin-top:4px}
+.login-tabs{display:flex;gap:4px;background:var(--bg);border-radius:var(--radius-sm);padding:3px;margin-bottom:24px}
+.login-tab{flex:1;padding:7px;font-size:13px;font-weight:500;border:none;background:none;border-radius:6px;cursor:pointer;color:var(--text2);font-family:inherit;transition:all .15s}
+.login-tab.active{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+/* ── Filters ─────────────────────────────────────────────────── */
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.chip{padding:5px 13px;border-radius:999px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;transition:all .15s}
+.chip:hover{border-color:var(--brand);color:var(--brand)}
+.chip.on{background:var(--brand-light);border-color:var(--brand);color:var(--brand)}
+.search-wrap{margin-left:auto;display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px}
+.search-wrap input{border:none;outline:none;font-size:12px;color:var(--text);background:transparent;width:150px}
+
+/* ── Approval row ────────────────────────────────────────────── */
+.appr-row{display:flex;align-items:flex-start;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.appr-row:last-child{border-bottom:none}
+.appr-body{flex:1}
+.appr-parties{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.appr-shift{font-size:12px;color:var(--text2);margin-bottom:8px}
+.appr-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── Timeline ────────────────────────────────────────────────── */
+.timeline{padding:20px}
+.tl-item{display:flex;gap:12px;margin-bottom:18px}
+.tl-left{display:flex;flex-direction:column;align-items:center}
+.tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.tl-line{flex:1;width:1px;background:var(--border);margin-top:3px}
+.tl-body{flex:1}
+.tl-title{font-size:13px;font-weight:500}
+.tl-meta{font-size:11px;color:var(--text2);margin-top:2px}
+
+/* ── Loader ──────────────────────────────────────────────────── */
+.loader{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-row{display:flex;align-items:center;justify-content:center;padding:32px;color:var(--text2);font-size:13px;gap:10px}
+
+/* ── Empty state ─────────────────────────────────────────────── */
+.empty{text-align:center;padding:40px;color:var(--text2)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.empty p{font-size:13px}
+
+/* ── Progress bar ────────────────────────────────────────────── */
+.prog-row{margin-bottom:14px}
+.prog-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:5px}
+.prog-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;background:var(--brand)}
+
+/* ── Section ─────────────────────────────────────────────────── */
+.page-section{display:none}
+.page-section.active{display:block}
+.page-head{margin-bottom:22px}
+.page-head h2{font-size:22px;font-weight:700}
+.page-head p{font-size:13px;color:var(--text2);margin-top:3px}
+
+/* ── Two-col grid ────────────────────────────────────────────── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+
+/* ── Manager tabs ────────────────────────────────────────────── */
+.page-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.page-tab{padding:10px 18px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit;transition:all .15s}
+.page-tab:hover{color:var(--text)}
+.page-tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.page-footer{text-align:center;padding:18px 24px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);background:var(--card);margin-top:auto}
+.page-footer a{color:var(--brand);font-weight:500}
+
+/* ── Mobile ──────────────────────────────────────────────────── */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .main{margin-left:0}
+  #menu-toggle{display:flex;align-items:center;justify-content:center}
+  .stats{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+  .grid-2{grid-template-columns:1fr}
+  .notif-panel{right:8px;left:8px;width:auto}
+  .tbl{display:block;overflow-x:auto}
+}
+@media(max-width:480px){
+  .stats{grid-template-columns:1fr}
+  .content{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-icon">N</div>
+      <h1>Nextcare</h1>
+      <p>Shift Swap System</p>
+    </div>
+
+    <div class="login-tabs">
+      <button class="login-tab active" onclick="showAuthTab('login',this)">Sign In</button>
+      <button class="login-tab" onclick="showAuthTab('register',this)">Register</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="auth-login">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" id="login-email" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="login-password" placeholder="••••••••" autocomplete="current-password">
+        <div class="form-error" id="login-error" style="display:none"></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doLogin()" id="login-btn">
+        Sign In
+      </button>
+      <div style="margin-top:14px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);font-size:12px;color:var(--text2);line-height:1.8">
+        <strong>Demo accounts:</strong><br>
+        Manager: manager@nextcare.com / manager123<br>
+        Employee: ahmed@nextcare.com / emp123456
+      </div>
+    </div>
+
+    <!-- Register Form -->
+    <div id="auth-register" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-input" id="reg-name" placeholder="Ahmed Mohamed">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" id="reg-email" placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="reg-password" placeholder="Min 6 characters">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Department</label>
+        <select class="form-select" id="reg-dept">
+          <option value="">Select department</option>
+          <option>Operations</option><option>Support</option>
+          <option>Sales</option><option>Management</option>
+        </select>
+      </div>
+      <div class="form-error" id="reg-error" style="display:none"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doRegister()" id="reg-btn">
+        Create Account
+      </button>
+    </div>
+
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--text2)">
+      Designed by <strong>Salah Farghaly</strong>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════════════════════════ -->
+<div id="app" style="display:none" class="app">
+  <div class="shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">N</div>
+        <div>
+          <div class="logo-text">Nextcare</div>
+          <div class="logo-sub">Shift Swap System</div>
+        </div>
+      </div>
+
+      <div class="user-pill">
+        <div class="avatar" id="sb-avatar">?</div>
+        <div>
+          <div class="user-name" id="sb-name">Loading...</div>
+          <div class="user-role" id="sb-role">employee</div>
+        </div>
+      </div>
+
+      <div class="mode-row" id="mode-row" style="display:none">
+        <button class="mode-btn active" id="mode-emp" onclick="setMode('employee')">Employee</button>
+        <button class="mode-btn"        id="mode-mgr" onclick="setMode('manager')">Manager</button>
+      </div>
+
+      <nav class="nav">
+        <!-- Employee nav -->
+        <div id="emp-nav">
+          <div class="nav-label">Overview</div>
+          <button class="nav-item active" onclick="goto('dashboard')"    id="nav-dashboard"><span class="ni">⊞</span> Dashboard</button>
+          <button class="nav-item"        onclick="goto('myshifts')"     id="nav-myshifts"><span class="ni">📅</span> My Shifts</button>
+          <button class="nav-item"        onclick="goto('swaps')"        id="nav-swaps"><span class="ni">⇄</span> Swap Requests <span class="nav-badge" id="badge-swaps" style="display:none">0</span></button>
+          <div class="nav-label" style="margin-top:10px">Actions</div>
+          <button class="nav-item"        onclick="goto('post-swap')"    id="nav-post-swap"><span class="ni">＋</span> Post Swap Request</button>
+          <button class="nav-item"        onclick="goto('history')"      id="nav-history"><span class="ni">◷</span> My History</button>
+        </div>
+        <!-- Manager nav -->
+        <div id="mgr-nav" style="display:none">
+          <div class="nav-label">Management</div>
+          <button class="nav-item active" onclick="goto('mgr-dashboard')" id="nav-mgr-dashboard"><span class="ni">⊞</span> Dashboard</button>
+          <button class="nav-item"        onclick="goto('approvals')"     id="nav-approvals"><span class="ni">✓</span> Approvals <span class="nav-badge" id="badge-approvals" style="display:none">0</span></button>
+          <button class="nav-item"        onclick="goto('team')"          id="nav-team"><span class="ni">👥</span> Team</button>
+          <button class="nav-item"        onclick="goto('reports')"       id="nav-reports"><span class="ni">📊</span> Reports</button>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <strong>Nextcare</strong>
+        Shift Swap System<br>
+        Designed by <a href="#" style="color:var(--brand);font-weight:600">Salah Farghaly</a>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button id="menu-toggle" onclick="toggleSidebar()">☰</button>
+          <div class="page-title" id="page-title">Dashboard</div>
+        </div>
+        <div class="topbar-right">
+          <div style="font-size:12px;color:var(--text2)" id="clock"></div>
+          <div class="notif-btn" onclick="toggleNotif()" id="notif-btn">
+            🔔<div class="notif-dot" id="notif-count" style="display:none">0</div>
+          </div>
+          <button class="btn btn-sm" onclick="logout()" style="color:var(--red);border-color:var(--red-bd)">Sign Out</button>
+        </div>
+      </header>
+
+      <!-- Notification panel -->
+      <div class="notif-panel" id="notif-panel">
+        <div class="notif-head">
+          Notifications
+          <button class="notif-clear" onclick="markAllRead()">Mark all read</button>
+        </div>
+        <div id="notif-list"><div class="notif-empty">Loading...</div></div>
+      </div>
+
+      <!-- Content area -->
+      <div class="content">
+
+        <!-- ─── EMPLOYEE: Dashboard ────────────────────────────── -->
+        <div class="page-section active" id="page-dashboard">
+          <div class="page-head">
+            <h2 id="dash-greeting">Good morning 👋</h2>
+            <p id="dash-sub">Here's what's happening today</p>
+          </div>
+          <div class="stats" id="dash-stats">
+            <div class="stat-card stat-blue"><div class="stat-label">My Shifts This Week</div><div class="stat-val" id="ds-shifts">—</div><div class="stat-sub">scheduled</div></div>
+            <div class="stat-card stat-amber"><div class="stat-label">My Open Requests</div><div class="stat-val" id="ds-open">—</div><div class="stat-sub">pending</div></div>
+            <div class="stat-card stat-green"><div class="stat-label">Completed Swaps</div><div class="stat-val" id="ds-done">—</div><div class="stat-sub">this month</div></div>
+            <div class="stat-card stat-red"><div class="stat-label">Team Requests</div><div class="stat-val" id="ds-team">—</div><div class="stat-sub">open for you</div></div>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><div class="card-title">This Week's Shifts</div><button class="btn btn-sm" onclick="goto('myshifts')">View all</button></div>
+              <div id="dash-shifts-list"><div class="loading-row"><div class="loader"></div> Loading...</div></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div class="card-title">Latest Swap Requests</div><button class="btn btn-sm" onclick="goto('swaps')">View all</button></div>
+              <div id="dash-swaps-list"><div class="loading-row"><div class="loader"></div> Loading...</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── EMPLOYEE: My Shifts ────────────────────────────── -->
+        <div class="page-section" id="page-myshifts">
+          <div class="page-head"><h2>My Shifts</h2><p>Your schedule this week</p></div>
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title" id="week-label">Loading...</div>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-sm" onclick="loadMyShifts(-7)">◀ Previous</button>
+                <button class="btn btn-sm" onclick="loadMyShifts(7)">Next ▶</button>
+              </div>
+            </div>
+            <table class="tbl" id="shifts-table">
+              <thead><tr><th>Day</th><th>Time</th><th>Type</th><th>Department</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="shifts-tbody"><tr><td colspan="6"><div class="loading-row"><div class="loader"></div> Loading...</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ─── EMPLOYEE: Swap Requests ───────────────────────── -->
+        <div class="page-section" id="page-swaps">
+          <div class="page-head"><h2>Swap Requests</h2><p>Open requests from your team</p></div>
+          <div class="filters">
+            <button class="chip on" onclick="filterSwaps('Open',this)">All Open</button>
+            <button class="chip" onclick="filterSwaps('Urgent',this)">🔴 Urgent</button>
+            <button class="chip" onclick="filterSwaps('Medium',this)">🟡 Medium</button>
+            <button class="chip" onclick="filterSwaps('Normal',this)">🟢 Normal</button>
+            <div class="search-wrap">🔍 <input placeholder="Search name..." id="swap-search" oninput="renderSwaps()"></div>
+          </div>
+          <div class="card">
+            <div id="swaps-list"><div class="loading-row"><div class="loader"></div> Loading...</div></div>
+          </div>
+        </div>
+
+        <!-- ─── EMPLOYEE: Post Swap ───────────────────────────── -->
+        <div class="page-section" id="page-post-swap">
+          <div class="page-head"><h2>Post Swap Request</h2><p>Offer your shift to the team</p></div>
+          <div class="form-box" style="max-width:560px">
+            <div class="form-group">
+              <label class="form-label">Select a shift to offer</label>
+              <select class="form-select" id="post-shift-select">
+                <option value="">— choose a shift —</option>
+              </select>
+              <div class="form-hint">Only your upcoming confirmed shifts are listed</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reason</label>
+              <textarea class="form-textarea" id="post-reason" placeholder="e.g. family event, medical appointment, travel..."></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Your available times (for the person covering you)</label>
+              <input type="text" class="form-input" id="post-available" placeholder="e.g. Friday afternoon, Saturday all day">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Urgency</label>
+              <select class="form-select" id="post-urgency">
+                <option value="Normal">Normal — when you get a chance</option>
+                <option value="Medium">Medium — within 2 days</option>
+                <option value="Urgent">Urgent — need fast response</option>
+              </select>
+            </div>
+            <div class="form-error" id="post-error" style="display:none"></div>
+            <button class="btn btn-primary" onclick="submitSwapRequest()" id="post-btn">📢 Post to Team</button>
+          </div>
+        </div>
+
+        <!-- ─── EMPLOYEE: History ─────────────────────────────── -->
+        <div class="page-section" id="page-history">
+          <div class="page-head"><h2>My Swap History</h2><p>All swaps involving you</p></div>
+          <div class="card">
+            <div class="timeline" id="history-list"><div class="loading-row"><div class="loader"></div> Loading...</div></div>
+          </div>
+        </div>
+
+        <!-- ─── MANAGER: Dashboard ────────────────────────────── -->
+        <div class="page-section" id="page-mgr-dashboard">
+          <div class="page-head"><h2>Manager Dashboard</h2><p>Team overview</p></div>
+          <div class="stats" id="mgr-stats">
+            <div class="stat-card stat-blue"><div class="stat-label">Total Team</div><div class="stat-val" id="ms-team">—</div><div class="stat-sub">active members</div></div>
+            <div class="stat-card stat-amber"><div class="stat-label">Awaiting Approval</div><div class="stat-val" id="ms-pending">—</div><div class="stat-sub">needs review</div></div>
+            <div class="stat-card stat-red"><div class="stat-label">Urgent Requests</div><div class="stat-val" id="ms-urgent">—</div><div class="stat-sub">today</div></div>
+            <div class="stat-card stat-green"><div class="stat-label">Approved This Month</div><div class="stat-val" id="ms-approved">—</div><div class="stat-sub">completed</div></div>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><div class="card-title">Pending Approvals</div><button class="btn btn-sm" onclick="goto('approvals')">View all</button></div>
+              <div id="mgr-pending-list"><div class="loading-row"><div class="loader"></div></div></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div class="card-title">Coverage Overview</div></div>
+              <div style="padding:16px" id="mgr-coverage"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── MANAGER: Approvals ────────────────────────────── -->
+        <div class="page-section" id="page-approvals">
+          <div class="page-head"><h2>Approvals</h2><p>Review swap requests from your team</p></div>
+          <div class="page-tabs">
+            <button class="page-tab active" onclick="switchApprTab('Accepted',this)">Awaiting Approval</button>
+            <button class="page-tab" onclick="switchApprTab('Approved',this)">Approved</button>
+            <button class="page-tab" onclick="switchApprTab('Rejected',this)">Rejected</button>
+            <button class="page-tab" onclick="switchApprTab('Open',this)">All Open</button>
+          </div>
+          <div class="card">
+            <div id="approvals-list"><div class="loading-row"><div class="loader"></div> Loading...</div></div>
+          </div>
+        </div>
+
+        <!-- ─── MANAGER: Team ─────────────────────────────────── -->
+        <div class="page-section" id="page-team">
+          <div class="page-head"><h2>Team</h2><p>All active members</p></div>
+          <div class="card">
+            <table class="tbl">
+              <thead><tr><th>Name</th><th>Department</th><th>Role</th><th>Swaps Sent</th><th>Completed</th></tr></thead>
+              <tbody id="team-tbody"><tr><td colspan="5"><div class="loading-row"><div class="loader"></div></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ─── MANAGER: Reports ──────────────────────────────── -->
+        <div class="page-section" id="page-reports">
+          <div class="page-head"><h2>Reports</h2><p>Swap statistics overview</p></div>
+          <div class="stats" id="rep-stats">
+            <div class="stat-card stat-blue"><div class="stat-label">Total Requests</div><div class="stat-val" id="rep-total">—</div></div>
+            <div class="stat-card stat-green"><div class="stat-label">Approved</div><div class="stat-val" id="rep-approved">—</div></div>
+            <div class="stat-card stat-red"><div class="stat-label">Rejected</div><div class="stat-val" id="rep-rejected">—</div></div>
+            <div class="stat-card stat-amber"><div class="stat-label">Still Open</div><div class="stat-val" id="rep-open">—</div></div>
+          </div>
+        </div>
+
+      </div><!-- /content -->
+
+      <!-- Footer -->
+      <footer class="page-footer">
+        © 2026 Nextcare — Shift Swap System &nbsp;|&nbsp;
+        Designed by <a href="mailto:salahfarghaly9@gmail.com">Salah Farghaly</a>
+      </footer>
+
+    </main>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div id="toasts"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════════════
+const API = '';  // same origin — empty = relative URLs
+
+// ═══════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════
+let TOKEN        = localStorage.getItem('nc_token') || '';
+let USER         = JSON.parse(localStorage.getItem('nc_user') || 'null');
+let currentMode  = 'employee';
+let notifOpen    = false;
+let allSwaps     = [];
+let swapFilter   = 'Open';
+let apprTab      = 'Accepted';
+let weekOffset   = 0;   // days from current week
+
+// ═══════════════════════════════════════════════════════════════
+//  API HELPER
+// ═══════════════════════════════════════════════════════════════
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' }
+  };
+  if (TOKEN) opts.headers['Authorization'] = `Bearer ${TOKEN}`;
+  if (body)  opts.body = JSON.stringify(body);
+
+  const res  = await fetch(API + path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Request failed');
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════════════════════════
+function showAuthTab(tab, el) {
+  document.getElementById('auth-login').style.display    = tab === 'login'    ? '' : 'none';
+  document.getElementById('auth-register').style.display = tab === 'register' ? '' : 'none';
+  document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+async function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
+
+  errEl.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Signing in...';
+
+  try {
+    const data = await api('POST', '/api/auth/login', { email, password });
+    TOKEN = data.token; USER = data.user;
+    localStorage.setItem('nc_token', TOKEN);
+    localStorage.setItem('nc_user',  JSON.stringify(USER));
+    bootApp();
+  } catch (err) {
+    errEl.textContent = err.message; errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+async function doRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass  = document.getElementById('reg-password').value;
+  const dept  = document.getElementById('reg-dept').value;
+  const errEl = document.getElementById('reg-error');
+  const btn   = document.getElementById('reg-btn');
+
+  errEl.style.display = 'none';
+  if (!name || !email || !pass || !dept) {
+    errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Creating account...';
+  try {
+    const data = await api('POST', '/api/auth/register', { name, email, password: pass, department: dept });
+    TOKEN = data.token; USER = data.user;
+    localStorage.setItem('nc_token', TOKEN);
+    localStorage.setItem('nc_user',  JSON.stringify(USER));
+    bootApp();
+  } catch (err) {
+    errEl.textContent = err.message; errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create Account';
+  }
+}
+
+function logout() {
+  TOKEN = ''; USER = null;
+  localStorage.removeItem('nc_token'); localStorage.removeItem('nc_user');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════════════
+function bootApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display          = 'flex';
+
+  // Sidebar user info
+  document.getElementById('sb-name').textContent = USER.name;
+  document.getElementById('sb-role').textContent = USER.department + ' · ' + USER.role;
+  document.getElementById('sb-avatar').textContent = USER.name.charAt(0).toUpperCase();
+
+  // Greeting
+  const h = new Date().getHours();
+  const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dash-greeting').textContent = `${g}, ${USER.name.split(' ')[0]} 👋`;
+  document.getElementById('dash-sub').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+  // Show mode toggle for managers
+  if (USER.role === 'manager') {
+    document.getElementById('mode-row').style.display = 'flex';
+  }
+
+  loadDashboard();
+  loadNotifications();
+  startClock();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+const PAGE_TITLES = {
+  'dashboard':'Dashboard','myshifts':'My Shifts','swaps':'Swap Requests',
+  'post-swap':'Post Swap Request','history':'My History',
+  'mgr-dashboard':'Manager Dashboard','approvals':'Approvals',
+  'team':'Team','reports':'Reports'
+};
+
+function goto(page) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  const sec = document.getElementById('page-' + page);
+  if (sec) sec.classList.add('active');
+
+  document.getElementById('page-title').textContent = PAGE_TITLES[page] || page;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const ni = document.getElementById('nav-' + page);
+  if (ni) ni.classList.add('active');
+
+  if (notifOpen) toggleNotif();
+  closeSidebarMobile();
+
+  // Lazy-load page data
+  if (page === 'myshifts')      loadMyShifts(0, true);
+  if (page === 'swaps')         loadSwaps();
+  if (page === 'post-swap')     loadShiftsForPost();
+  if (page === 'history')       loadHistory();
+  if (page === 'approvals')     loadApprovals();
+  if (page === 'team')          loadTeam();
+  if (page === 'reports')       loadReports();
+  if (page === 'mgr-dashboard') loadMgrDashboard();
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('mode-emp').classList.toggle('active', mode === 'employee');
+  document.getElementById('mode-mgr').classList.toggle('active', mode === 'manager');
+  document.getElementById('emp-nav').style.display = mode === 'employee' ? 'block' : 'none';
+  document.getElementById('mgr-nav').style.display = mode === 'manager'  ? 'block' : 'none';
+  goto(mode === 'manager' ? 'mgr-dashboard' : 'dashboard');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DASHBOARD (employee)
+// ═══════════════════════════════════════════════════════════════
+async function loadDashboard() {
+  try {
+    // My shifts this week
+    const sd = await api('GET', '/api/shifts/my');
+    document.getElementById('ds-shifts').textContent = sd.shifts.length;
+
+    // My open swap requests
+    const mo = await api('GET', '/api/swaps?mine=true&status=Open');
+    document.getElementById('ds-open').textContent = mo.total;
+
+    // Completed swaps
+    document.getElementById('ds-done').textContent = USER.swapStats?.completed || 0;
+
+    // Open team requests
+    const tr = await api('GET', '/api/swaps?status=Open');
+    document.getElementById('ds-team').textContent = tr.total;
+
+    // Render recent shifts
+    const shiftsEl = document.getElementById('dash-shifts-list');
+    if (!sd.shifts.length) {
+      shiftsEl.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><p>No shifts this week</p></div>';
+    } else {
+      shiftsEl.innerHTML = sd.shifts.slice(0, 5).map(s => `
+        <div class="row-item">
+          <div class="ri-info">
+            <div class="ri-name">${fmtDate(s.date)} &nbsp; ${s.startTime}–${s.endTime}</div>
+            <div class="ri-sub">${s.type} · ${s.department}</div>
+          </div>
+          ${statusBadge(s.status)}
+        </div>`).join('');
+    }
+
+    // Render recent team swaps
+    const swapsEl = document.getElementById('dash-swaps-list');
+    if (!tr.swaps.length) {
+      swapsEl.innerHTML = '<div class="empty"><div class="empty-icon">⇄</div><p>No open swap requests</p></div>';
+    } else {
+      swapsEl.innerHTML = tr.swaps.slice(0, 4).map(sw => `
+        <div class="row-item">
+          <div class="u-dot u-${sw.urgency.toLowerCase()}"></div>
+          <div class="ri-info">
+            <div class="ri-name">${sw.requester?.name || '?'}</div>
+            <div class="ri-sub">${shiftLabel(sw.requesterShift)} · ${sw.reason || 'No reason given'}</div>
+          </div>
+          <span class="badge ${urgBadge(sw.urgency)}">${sw.urgency}</span>
+        </div>`).join('');
+    }
+  } catch (err) { toast('error', err.message); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MY SHIFTS
+// ═══════════════════════════════════════════════════════════════
+async function loadMyShifts(delta = 0, reset = false) {
+  if (reset) weekOffset = 0;
+  weekOffset += delta;
+
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7) + weekOffset);
+  monday.setHours(0,0,0,0);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); sunday.setHours(23,59,59,999);
+
+  document.getElementById('week-label').textContent =
+    `${monday.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${sunday.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`;
+
+  const tbody = document.getElementById('shifts-tbody');
+  tbody.innerHTML = '<tr><td colspan="6"><div class="loading-row"><div class="loader"></div></div></td></tr>';
+
+  try {
+    const from = monday.toISOString().split('T')[0];
+    const to   = sunday.toISOString().split('T')[0];
+    const data = await api('GET', `/api/shifts?from=${from}&to=${to}`);
+
+    if (!data.shifts.length) {
+      tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><p>No shifts this week</p></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.shifts.map(s => `
+      <tr>
+        <td><strong>${fmtDate(s.date)}</strong></td>
+        <td>${s.startTime} – ${s.endTime}</td>
+        <td>${typeBadge(s.type)}</td>
+        <td>${s.department}</td>
+        <td>${statusBadge(s.status)}</td>
+        <td>
+          ${s.status === 'Confirmed'
+            ? `<button class="btn btn-xs" onclick="prefillPostSwap('${s._id}')">Offer Swap</button>`
+            : '—'}
+        </td>
+      </tr>`).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:16px;color:var(--red)">${err.message}</td></tr>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SWAP REQUESTS (team feed)
+// ═══════════════════════════════════════════════════════════════
+async function loadSwaps() {
+  document.getElementById('swaps-list').innerHTML =
+    '<div class="loading-row"><div class="loader"></div> Loading...</div>';
+  try {
+    const data = await api('GET', '/api/swaps?status=Open');
+    allSwaps = data.swaps;
+    renderSwaps();
+    const b = document.getElementById('badge-swaps');
+    if (data.total > 0) { b.textContent = data.total; b.style.display = ''; }
+    else b.style.display = 'none';
+  } catch (err) { toast('error', err.message); }
+}
+
+function filterSwaps(val, el) {
+  swapFilter = val;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  renderSwaps();
+}
+
+function renderSwaps() {
+  const q   = (document.getElementById('swap-search')?.value || '').toLowerCase();
+  let list  = allSwaps;
+
+  if (swapFilter !== 'Open') {
+    list = list.filter(s => s.urgency === swapFilter);
+  }
+  if (q) list = list.filter(s => (s.requester?.name || '').toLowerCase().includes(q));
+
+  const el = document.getElementById('swaps-list');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">⇄</div><p>No swap requests matching your filter</p></div>';
+    return;
+  }
+  el.innerHTML = list.map(sw => `
+    <div class="row-item">
+      <div class="u-dot u-${sw.urgency.toLowerCase()}"></div>
+      <div class="avatar" style="width:36px;height:36px;font-size:13px;flex-shrink:0">${(sw.requester?.name||'?').charAt(0)}</div>
+      <div class="ri-info">
+        <div class="ri-name">${sw.requester?.name || '?'} <span class="badge ${urgBadge(sw.urgency)}" style="margin-left:6px">${sw.urgency}</span></div>
+        <div class="ri-sub">${shiftLabel(sw.requesterShift)} · ${sw.requester?.department || ''}</div>
+        ${sw.reason ? `<div class="ri-note">${sw.reason}</div>` : ''}
+      </div>
+      <div class="ri-actions">
+        ${sw.requester?._id !== USER._id
+          ? `<button class="btn btn-success btn-sm" onclick="acceptSwap('${sw._id}','${sw.requester?.name}')">✓ Accept</button>`
+          : `<span class="badge badge-gray">Your request</span>`}
+      </div>
+    </div>`).join('');
+}
+
+async function acceptSwap(id, name) {
+  if (!confirm(`Accept swap request from ${name}? This will be sent to your manager for approval.`)) return;
+  try {
+    await api('POST', `/api/swaps/${id}/accept`);
+    toast('success', `Accepted! Awaiting manager approval.`);
+    loadSwaps();
+    loadNotifications();
+  } catch (err) { toast('error', err.message); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  POST SWAP REQUEST
+// ═══════════════════════════════════════════════════════════════
+async function loadShiftsForPost() {
+  const sel = document.getElementById('post-shift-select');
+  sel.innerHTML = '<option value="">Loading your shifts...</option>';
+  try {
+    const data = await api('GET', '/api/shifts?status=Confirmed');
+    const upcoming = data.shifts.filter(s => new Date(s.date) >= new Date());
+    sel.innerHTML = '<option value="">— choose a shift —</option>' +
+      upcoming.map(s => `<option value="${s._id}">${fmtDate(s.date)} · ${s.startTime}–${s.endTime} (${s.type})</option>`).join('');
+  } catch (err) {
+    sel.innerHTML = '<option value="">Failed to load shifts</option>';
+  }
+}
+
+function prefillPostSwap(shiftId) {
+  goto('post-swap');
+  setTimeout(() => {
+    const sel = document.getElementById('post-shift-select');
+    if (sel) sel.value = shiftId;
+  }, 200);
+}
+
+async function submitSwapRequest() {
+  const shiftId  = document.getElementById('post-shift-select').value;
+  const reason   = document.getElementById('post-reason').value.trim();
+  const avail    = document.getElementById('post-available').value.trim();
+  const urgency  = document.getElementById('post-urgency').value;
+  const errEl    = document.getElementById('post-error');
+  const btn      = document.getElementById('post-btn');
+
+  errEl.style.display = 'none';
+  if (!shiftId) { errEl.textContent = 'Please select a shift.'; errEl.style.display = 'block'; return; }
+
+  btn.disabled = true; btn.innerHTML = '<div class="loader"></div>';
+  try {
+    await api('POST', '/api/swaps', { shiftId, reason, availableTimes: avail, urgency });
+    toast('success', '📢 Swap request posted to the team!');
+    document.getElementById('post-reason').value   = '';
+    document.getElementById('post-available').value = '';
+    goto('swaps');
+  } catch (err) {
+    errEl.textContent = err.message; errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.innerHTML = '📢 Post to Team';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  HISTORY
+// ═══════════════════════════════════════════════════════════════
+async function loadHistory() {
+  const el = document.getElementById('history-list');
+  el.innerHTML = '<div class="loading-row"><div class="loader"></div></div>';
+  try {
+    const data = await api('GET', '/api/swaps?mine=true&status=');
+    const all  = data.swaps;
+    if (!all.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">◷</div><p>No swap history yet</p></div>';
+      return;
+    }
+    const colorMap = { Approved:'var(--green)', Rejected:'var(--red)', Withdrawn:'var(--gray)', Accepted:'var(--amber)', Open:'var(--brand)' };
+    el.innerHTML = all.map(sw => `
+      <div class="tl-item">
+        <div class="tl-left">
+          <div class="tl-dot" style="background:${colorMap[sw.status]||'var(--gray)'}"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-body">
+          <div class="tl-title">${shiftLabel(sw.requesterShift)} &nbsp; <span class="badge ${sw.status === 'Approved' ? 'badge-green' : sw.status === 'Rejected' ? 'badge-red' : 'badge-gray'}">${sw.status}</span></div>
+          <div class="tl-meta">${fmtDateTime(sw.createdAt)}${sw.reason ? ' · ' + sw.reason : ''}</div>
+        </div>
+      </div>`).join('');
+  } catch (err) { el.innerHTML = `<div class="empty"><p>${err.message}</p></div>`; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MANAGER: Dashboard
+// ═══════════════════════════════════════════════════════════════
+async function loadMgrDashboard() {
+  try {
+    const [stats, users, swaps] = await Promise.all([
+      api('GET', '/api/swaps/stats/summary'),
+      api('GET', '/api/users'),
+      api('GET', '/api/swaps?status=Accepted')
+    ]);
+    const s = stats.stats;
+    document.getElementById('ms-team').textContent     = users.count;
+    document.getElementById('ms-pending').textContent  = s.accepted;
+    document.getElementById('ms-urgent').textContent   = s.urgent;
+    document.getElementById('ms-approved').textContent = s.approved;
+
+    // Badge
+    const b = document.getElementById('badge-approvals');
+    if (s.accepted > 0) { b.textContent = s.accepted; b.style.display = ''; }
+    else b.style.display = 'none';
+
+    // Pending list
+    const el = document.getElementById('mgr-pending-list');
+    if (!swaps.swaps.length) {
+      el.innerHTML = '<div class="empty"><p>No pending approvals</p></div>';
+    } else {
+      el.innerHTML = swaps.swaps.slice(0, 3).map(sw => `
+        <div class="row-item">
+          <div class="u-dot u-${sw.urgency.toLowerCase()}"></div>
+          <div class="ri-info">
+            <div class="ri-name">${sw.requester?.name||'?'} ⇄ ${sw.acceptor?.name||'waiting'}</div>
+            <div class="ri-sub">${shiftLabel(sw.requesterShift)}</div>
+          </div>
+          <div class="ri-actions">
+            <button class="btn btn-success btn-xs" onclick="managerApprove('${sw._id}')">✓</button>
+            <button class="btn btn-danger btn-xs"  onclick="managerReject('${sw._id}')">✗</button>
+          </div>
+        </div>`).join('');
+    }
+
+    // Coverage overview
+    const total = s.open + s.accepted + s.approved + s.rejected || 1;
+    document.getElementById('mgr-coverage').innerHTML = `
+      <div class="prog-row"><div class="prog-label"><span>Approved</span><span>${s.approved}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${Math.round(s.approved/total*100)}%;background:var(--green)"></div></div></div>
+      <div class="prog-row"><div class="prog-label"><span>Awaiting Approval</span><span>${s.accepted}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${Math.round(s.accepted/total*100)}%;background:var(--amber)"></div></div></div>
+      <div class="prog-row"><div class="prog-label"><span>Open (no acceptor)</span><span>${s.open}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${Math.round(s.open/total*100)}%;background:var(--brand)"></div></div></div>
+      <div class="prog-row"><div class="prog-label"><span>Rejected</span><span>${s.rejected}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${Math.round(s.rejected/total*100)}%;background:var(--red)"></div></div></div>`;
+  } catch (err) { toast('error', err.message); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MANAGER: Approvals
+// ═══════════════════════════════════════════════════════════════
+let apprSwaps = [];
+
+async function loadApprovals() {
+  const el = document.getElementById('approvals-list');
+  el.innerHTML = '<div class="loading-row"><div class="loader"></div></div>';
+  try {
+    const statusParam = apprTab === 'All Open' ? 'Open' : apprTab;
+    const data = await api('GET', `/api/swaps?status=${statusParam}`);
+    apprSwaps = data.swaps;
+    renderApprovals();
+  } catch (err) { toast('error', err.message); }
+}
+
+function switchApprTab(tab, el) {
+  apprTab = tab;
+  document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  loadApprovals();
+}
+
+function renderApprovals() {
+  const el = document.getElementById('approvals-list');
+  if (!apprSwaps.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">✓</div><p>Nothing here</p></div>';
+    return;
+  }
+  el.innerHTML = apprSwaps.map(sw => `
+    <div class="appr-row">
+      <div class="u-dot u-${sw.urgency.toLowerCase()}" style="margin-top:12px"></div>
+      <div class="appr-body">
+        <div class="appr-parties">
+          <div class="avatar" style="width:32px;height:32px;font-size:12px">${(sw.requester?.name||'?').charAt(0)}</div>
+          <strong>${sw.requester?.name||'?'}</strong>
+          <span style="color:var(--text2)">⇄</span>
+          <strong>${sw.acceptor?.name || '⬛ waiting'}</strong>
+          <span class="badge ${urgBadge(sw.urgency)}">${sw.urgency}</span>
+          <span class="badge badge-gray">${sw.status}</span>
+        </div>
+        <div class="appr-shift">📅 ${shiftLabel(sw.requesterShift)} · ${sw.requester?.department||''} ${sw.reason ? '· ' + sw.reason : ''}</div>
+        <div class="appr-actions">
+          ${sw.status === 'Accepted' ? `
+            <button class="btn btn-success btn-sm" onclick="managerApprove('${sw._id}')">✓ Approve &amp; notify both</button>
+            <button class="btn btn-danger btn-sm"  onclick="managerReject('${sw._id}')">✗ Reject</button>` : ''}
+          <span style="font-size:11px;color:var(--text2)">${fmtDateTime(sw.createdAt)}</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function managerApprove(id) {
+  if (!confirm('Approve this swap? Both parties will be notified.')) return;
+  try {
+    await api('POST', `/api/swaps/${id}/approve`);
+    toast('success', '✓ Swap approved — team notified');
+    loadApprovals(); loadMgrDashboard(); loadNotifications();
+  } catch (err) { toast('error', err.message); }
+}
+
+async function managerReject(id) {
+  const note = prompt('Reason for rejection (optional):') || '';
+  try {
+    await api('POST', `/api/swaps/${id}/reject`, { note });
+    toast('warning', 'Swap rejected — team notified');
+    loadApprovals(); loadMgrDashboard(); loadNotifications();
+  } catch (err) { toast('error', err.message); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MANAGER: Team
+// ═══════════════════════════════════════════════════════════════
+async function loadTeam() {
+  const tbody = document.getElementById('team-tbody');
+  tbody.innerHTML = '<tr><td colspan="5"><div class="loading-row"><div class="loader"></div></div></td></tr>';
+  try {
+    const data = await api('GET', '/api/users');
+    tbody.innerHTML = data.users.map(u => `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="avatar" style="width:30px;height:30px;font-size:12px">${u.name.charAt(0)}</div>
+            ${u.name}
+          </div>
+        </td>
+        <td>${u.department}</td>
+        <td><span class="badge ${u.role==='manager'?'badge-blue':'badge-gray'}">${u.role}</span></td>
+        <td>${u.swapStats?.sent || 0}</td>
+        <td>${u.swapStats?.completed || 0}</td>
+      </tr>`).join('');
+  } catch (err) { toast('error', err.message); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MANAGER: Reports
+// ═══════════════════════════════════════════════════════════════
+async function loadReports() {
+  try {
+    const data = await api('GET', '/api/swaps/stats/summary');
+    const s = data.stats;
+    document.getElementById('rep-total').textContent    = s.total;
+    document.getElementById('rep-approved').textContent = s.approved;
+    document.getElementById('rep-rejected').textContent = s.rejected;
+    document.getElementById('rep-open').textContent     = s.open;
+  } catch (err) { toast('error', err.message); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════
+async function loadNotifications() {
+  try {
+    const data  = await api('GET', '/api/notifications');
+    const count = data.unreadCount;
+    const dot   = document.getElementById('notif-count');
+    if (count > 0) { dot.textContent = count; dot.style.display = ''; }
+    else dot.style.display = 'none';
+
+    const el = document.getElementById('notif-list');
+    if (!data.notifications.length) {
+      el.innerHTML = '<div class="notif-empty">No notifications</div>';
+      return;
+    }
+    el.innerHTML = data.notifications.slice(0, 8).map(n => `
+      <div class="notif-item ${!n.isRead ? 'unread' : ''}" onclick="readNotif('${n._id}',this)">
+        <div class="nd" style="background:${n.isRead ? 'var(--border)' : 'var(--brand)'}"></div>
+        <div>
+          <div class="notif-text"><strong>${n.title}</strong><br>${n.message}</div>
+          <div class="notif-time">${fmtDateTime(n.createdAt)}</div>
+        </div>
+      </div>`).join('');
+  } catch (_) { /* silent */ }
+}
+
+async function readNotif(id, el) {
+  el.classList.remove('unread');
+  el.querySelector('.nd').style.background = 'var(--border)';
+  await api('PATCH', `/api/notifications/${id}/read`).catch(() => {});
+}
+
+async function markAllRead() {
+  await api('PATCH', '/api/notifications/read-all').catch(() => {});
+  document.querySelectorAll('.notif-item').forEach(i => {
+    i.classList.remove('unread'); i.querySelector('.nd').style.background = 'var(--border)';
+  });
+  document.getElementById('notif-count').style.display = 'none';
+}
+
+function toggleNotif() {
+  notifOpen = !notifOpen;
+  document.getElementById('notif-panel').classList.toggle('open', notifOpen);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════════
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+}
+function fmtDateTime(d) {
+  return new Date(d).toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+function shiftLabel(shift) {
+  if (!shift) return '—';
+  const date = fmtDate(shift.date);
+  return `${date} · ${shift.startTime||''}–${shift.endTime||''} (${shift.type||''})`;
+}
+function statusBadge(status) {
+  const map = { Confirmed:'badge-green', NeedsCoverage:'badge-amber', Swapped:'badge-gray', Pending:'badge-amber' };
+  const labels = { Confirmed:'✓ Confirmed', NeedsCoverage:'⚠ Needs Coverage', Swapped:'⇄ Swapped', Pending:'⏳ Pending' };
+  return `<span class="badge ${map[status]||'badge-gray'}">${labels[status]||status}</span>`;
+}
+function typeBadge(type) {
+  const map = { Morning:'badge-blue', Afternoon:'badge-amber', Night:'badge-gray', Half:'badge-green' };
+  return `<span class="badge ${map[type]||'badge-gray'}">${type}</span>`;
+}
+function urgBadge(u) {
+  return u === 'Urgent' ? 'badge-red' : u === 'Medium' ? 'badge-amber' : 'badge-green';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  UI UTILS
+// ═══════════════════════════════════════════════════════════════
+function toast(type, msg) {
+  const icons = { success:'✓', error:'✗', info:'ℹ', warning:'⚠' };
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${icons[type]||'·'}</span> <span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, 4000);
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+function closeSidebarMobile() {
+  if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+}
+
+function startClock() {
+  const el = document.getElementById('clock');
+  const tick = () => el.textContent = new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+  tick(); setInterval(tick, 30000);
+}
+
+// Close notif panel on outside click
+document.addEventListener('click', e => {
+  if (notifOpen && !e.target.closest('#notif-panel') && !e.target.closest('#notif-btn')) {
+    notifOpen = false;
+    document.getElementById('notif-panel').classList.remove('open');
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    notifOpen = false;
+    document.getElementById('notif-panel').classList.remove('open');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  AUTO-LOGIN if token saved
+// ═══════════════════════════════════════════════════════════════
+(async () => {
+  if (TOKEN && USER) {
+    // Verify token is still valid
+    try {
+      const data = await api('GET', '/api/auth/me');
+      USER = data.user;
+      localStorage.setItem('nc_user', JSON.stringify(USER));
+      bootApp();
+    } catch {
+      // Token expired — show login
+      localStorage.removeItem('nc_token'); localStorage.removeItem('nc_user');
+      TOKEN = ''; USER = null;
+    }
+  }
+})();
+</script>
+</body>
+</html>
